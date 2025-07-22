@@ -10,9 +10,10 @@ export default function PassedIdeasModal({
   onUnpass,
   role = 'vc'
 }) {
-  if (!isOpen) return null
-
+  // Move useEffect BEFORE the conditional return
   useEffect(() => {
+    if (!isOpen) return // Early return inside useEffect instead
+
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
         onClose()
@@ -37,7 +38,9 @@ export default function PassedIdeasModal({
         window.history.back()
       }
     }
-  }, [onClose])
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
 
   const handleUnpass = async (id) => {
     if (onUnpass) {
