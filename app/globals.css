@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure proper viewport handling */
+html, body {
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ensure triangles are always visible */
+.napkin-triangle {
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* Prevent text selection on triangles */
+.napkin-triangle * {
+  user-select: none;
+} 
