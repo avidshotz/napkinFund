@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import NapkinCard from '../NapkinCard'
 
 export default function MatchesNapkin({ 
@@ -57,6 +57,35 @@ export default function MatchesNapkin({
     }
   }
 
+  useEffect(() => {
+    if (isModalOpen) {
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          closeConnectionModal()
+        }
+      }
+
+      const handleBackButton = () => {
+        closeConnectionModal()
+      }
+
+      document.addEventListener('keydown', handleEscape)
+      window.addEventListener('popstate', handleBackButton)
+
+      // Push a new state to enable back button functionality
+      window.history.pushState({ modal: true }, '')
+
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+        window.removeEventListener('popstate', handleBackButton)
+        // Remove the state we added
+        if (window.history.state?.modal) {
+          window.history.back()
+        }
+      }
+    }
+  }, [isModalOpen])
+
   return (
     <>
       <NapkinCard width={width} height={height}>
@@ -106,7 +135,7 @@ export default function MatchesNapkin({
       {/* Connection Request Modal for VCs */}
       {isModalOpen && selectedMatch && role === 'vc' && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Send Connection Request</h3>
               <button

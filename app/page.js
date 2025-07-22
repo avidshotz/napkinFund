@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { pdfsService, profilesService, connectionsService } from '../lib/database'
 import { supabase } from '../lib/supabase'

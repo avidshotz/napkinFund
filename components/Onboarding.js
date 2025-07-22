@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { profilesService } from '../lib/database';
 import { onboardingQuestions } from '../app/page';
 import { supabase } from '../lib/supabase';
@@ -78,9 +78,26 @@ export default function Onboarding({ user, profile, onComplete }) {
     }
   };
 
+  useEffect(() => {
+    if (showOnboarding) {
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          // You might want to prevent closing onboarding with escape
+          // Or add a way to close it
+        }
+      }
+
+      document.addEventListener('keydown', handleEscape)
+
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+  }, [showOnboarding])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 w-full max-w-sm space-y-6">
         <h2 className="text-2xl font-bold mb-4 text-center">Welcome! Let&apos;s set up your profile</h2>
         {onboardingQuestions.map(q => (
           <div key={q.key} className="space-y-1">

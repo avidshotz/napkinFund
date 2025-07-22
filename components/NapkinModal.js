@@ -1,23 +1,21 @@
 'use client'
 
-import { useState } from 'react'
-
 export default function NapkinModal({ 
   isOpen, 
   onClose, 
   title, 
   description, 
   children,
-  width = 600,
+  width = 400,
   height = 400,
   customHeader
 }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 pointer-events-none">
       <div 
-        className="bg-white border-2 border-gray-200 shadow-xl relative rounded-3xl"
+        className="bg-white border-2 border-gray-200 shadow-xl relative rounded-3xl pointer-events-auto"
         style={{ 
           width: `${width}px`, 
           height: `${height}px`

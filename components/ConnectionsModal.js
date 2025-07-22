@@ -1,10 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NapkinModal from './NapkinModal';
 
 export default function ConnectionsModal({ isOpen, onClose, connectionRequests, role, onRequestConnection, onAcceptConnection, onDisconnectConnection, onOpenLikesModal, onOpenPassedModal }) {
   const [showDetailsId, setShowDetailsId] = useState(null);
   const [showConfirmDisconnectId, setShowConfirmDisconnectId] = useState(null);
   const [showConfirmPassId, setShowConfirmPassId] = useState(null);
+
+  // Add escape key functionality
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        if (showConfirmPassId) {
+          setShowConfirmPassId(null);
+        } else if (showConfirmDisconnectId) {
+          setShowConfirmDisconnectId(null);
+        } else if (showDetailsId) {
+          setShowDetailsId(null);
+        } else {
+          onClose();
+        }
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [isOpen, showDetailsId, showConfirmDisconnectId, showConfirmPassId, onClose]);
 
   // Sort: pending first, then requested, then connected (chronologically)
   const sortedConnections = (connectionRequests || []).slice().sort((a, b) => {
@@ -98,7 +122,7 @@ export default function ConnectionsModal({ isOpen, onClose, connectionRequests, 
       onClose={onClose}
       title="Connections"
       description="Manage your connections."
-      width={600}
+      width={450}
       height={500}
       customHeader={customHeader}
     >
@@ -154,8 +178,8 @@ export default function ConnectionsModal({ isOpen, onClose, connectionRequests, 
                 )}
                 {/* Details Modal for Accepted connection */}
                 {showDetailsId === conn.id && (
-                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-80 relative">
+                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40 pointer-events-none">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-80 relative pointer-events-auto">
                       <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onClick={() => setShowDetailsId(null)}>&times;</button>
                       <div className="mb-2 font-semibold text-lg">Connection Details</div>
                       <div className="mb-2">VC: <span className="font-medium">{conn.vcName}</span></div>
@@ -175,8 +199,8 @@ export default function ConnectionsModal({ isOpen, onClose, connectionRequests, 
                 )}
                 {/* Are you sure modal for disconnect */}
                 {showConfirmDisconnectId === conn.id && (
-                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-72">
+                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 pointer-events-none">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-72 pointer-events-auto">
                       <div className="mb-4 text-center">Are you sure you want to disconnect from <span className="font-semibold">{conn.vcName}</span>?</div>
                       <div className="flex justify-between">
                         <button
@@ -197,8 +221,8 @@ export default function ConnectionsModal({ isOpen, onClose, connectionRequests, 
                 )}
                 {/* Are you sure modal for pass on connected user */}
                 {showConfirmPassId === conn.id && (
-                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-72">
+                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 pointer-events-none">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-72 pointer-events-auto">
                       <div className="mb-4 text-center">
                         Are you sure you want to pass on <span className="font-semibold">
                           {role === 'founder' ? conn.vcName : conn.founderName}

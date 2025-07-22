@@ -31,6 +31,22 @@ export default function AccountModal({
     profilePicture: null
   })
 
+  // Add escape key functionality
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+  }, [isOpen, onClose])
+
   // Fetch current profile data
   useEffect(() => {
     const fetchProfile = async () => {
