@@ -101,9 +101,9 @@ export default function Home() {
           if (role === 'vc') {
             // For VCs: fetch ideas and connections
             const [allPdfs, userLikedPdfs, userPassedPdfs, pendingConnections, requestedConnections, connectedConnections] = await Promise.all([
-              pdfsService.getAllPdfs(),
-              pdfsService.getLikedPdfsByUser(user.id),
-              pdfsService.getPassedPdfsByUser(user.id),
+            pdfsService.getAllPdfs(),
+            pdfsService.getLikedPdfsByUser(user.id),
+            pdfsService.getPassedPdfsByUser(user.id),
               connectionsService.getConnectionsByStatus(user.id, 'pending'),
               connectionsService.getConnectionsByStatus(user.id, 'requested'),
               connectionsService.getConnectionsByStatus(user.id, 'connected')
@@ -136,39 +136,39 @@ export default function Home() {
             }));
             setConnectionRequests(allConnectionRequests);
 
-            // PassedIdeasModal: use the passed PDFs from connections table
-            setPassedIdeas(userPassedPdfs);
+          // PassedIdeasModal: use the passed PDFs from connections table
+          setPassedIdeas(userPassedPdfs);
 
-            // Main feed: fetch unliked and unpassed PDFs with creator info
-            let unlikedPdfsWithCreator = [];
+          // Main feed: fetch unliked and unpassed PDFs with creator info
+          let unlikedPdfsWithCreator = [];
             const interactedPdfIds = [...userLikedPdfs.map(pdf => pdf.id), ...userPassedPdfs.map(pdf => pdf.id)];
             const unlikedPdfs = allPdfs.filter(pdf => !interactedPdfIds.includes(pdf.id));
-            if (unlikedPdfs.length > 0) {
-              const { data: unlikedPdfsData, error: unlikedPdfsError } = await supabase
-                .from('pdfs')
-                .select('*, creator:user_id (name, link, vcphotourl)')
-                .in('id', unlikedPdfs.map(pdf => pdf.id))
-                .order('created_at', { ascending: false });
-              if (!unlikedPdfsError) {
-                unlikedPdfsWithCreator = unlikedPdfsData
+          if (unlikedPdfs.length > 0) {
+            const { data: unlikedPdfsData, error: unlikedPdfsError } = await supabase
+              .from('pdfs')
+              .select('*, creator:user_id (name, link, vcphotourl)')
+              .in('id', unlikedPdfs.map(pdf => pdf.id))
+              .order('created_at', { ascending: false });
+            if (!unlikedPdfsError) {
+              unlikedPdfsWithCreator = unlikedPdfsData
                   .filter(pdf => pdf.creator)
-                  .map(pdf => ({
-                    ...pdf,
-                    creatorName: pdf.creator?.name || 'Unknown',
-                    creatorLinkedin: pdf.creator?.link,
-                    creatorPhoto: pdf.creator?.vcphotourl
-                  }));
-              }
+                .map(pdf => ({
+                  ...pdf,
+                  creatorName: pdf.creator?.name || 'Unknown',
+                  creatorLinkedin: pdf.creator?.link,
+                  creatorPhoto: pdf.creator?.vcphotourl
+                }));
             }
-            setCreativeIdeas(unlikedPdfsWithCreator);
+          }
+          setCreativeIdeas(unlikedPdfsWithCreator);
 
-            // AccountModal: fetch user profile
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', user.id)
-              .single();
-            if (!profileError) setProfile(profileData);
+          // AccountModal: fetch user profile
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          if (!profileError) setProfile(profileData);
 
             setMatchedIdeas([]); // VCs don't see matches until founders like them
             setVcLikedIdeas([]);
@@ -196,7 +196,7 @@ export default function Home() {
               ideaName: conn.idea?.idea_name || conn.idea_id,
             }));
             setConnectionRequests(allConnectionRequests);
-
+            
             setCreativeIdeas(userPdfs); // Founders see their own submitted ideas
             setLikedIdeas(userLikedPdfs);
             setMatchedIdeas([]);

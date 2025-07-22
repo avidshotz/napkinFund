@@ -20,9 +20,9 @@ export default function BottomNapkinBar({ buttons }) {
   }, [buttons.length]);
 
   return (
-    <div className="fixed bottom-0 left-0 w-full flex justify-between items-end px-6 z-50 pointer-events-none" style={{gap: 0}}>
+    <div className="fixed bottom-0 left-0 w-full flex justify-between items-end px-6 z-40 pointer-events-none" style={{gap: 0}}>
       {buttons.map((button, i) => (
-        <div key={button.label} className="flex-1 flex justify-center pointer-events-auto">
+        <div key={button.label} className="flex-1 flex justify-center pointer-events-none">
           <NapkinCornerButton {...button} width={napkinWidth} />
         </div>
       ))}

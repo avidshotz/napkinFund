@@ -209,18 +209,18 @@ export default function AccountModal({
             </div>
 
             {/* LinkedIn Profile (for both founders and VCs) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                LinkedIn Profile
-              </label>
-              <input
-                type="url"
-                value={profileForm.link}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, link: e.target.value }))}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://linkedin.com/in/yourprofile"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  LinkedIn Profile
+                </label>
+                <input
+                  type="url"
+                  value={profileForm.link}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, link: e.target.value }))}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://linkedin.com/in/yourprofile"
+                />
+              </div>
 
             {/* What I'm Looking For */}
             <div>
