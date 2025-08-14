@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { pdfsService, profilesService, connectionsService } from '../lib/database'
 import { supabase } from '../lib/supabase'
@@ -41,7 +41,6 @@ export default function Home() {
   const [vcsWithLikedIdeas, setVcsWithLikedIdeas] = useState([])
   const [connectionRequests, setConnectionRequests] = useState([])
   const [loading, setLoading] = useState(true)
-  const [roleChangeTrigger, setRoleChangeTrigger] = useState(0) // Add this to trigger re-fetch
   const [isLikesModalOpen, setIsLikesModalOpen] = useState(false)
   const [isSubmittedIdeasModalOpen, setIsSubmittedIdeasModalOpen] = useState(false)
   const [isVCLikesModalOpen, setIsVCLikesModalOpen] = useState(false)
@@ -54,6 +53,7 @@ export default function Home() {
   const [isPendingConnectionsModalOpen, setIsPendingConnectionsModalOpen] = useState(false);
   const [isConnectionsModalOpen, setIsConnectionsModalOpen] = useState(false);
   const [vcReviewItems, setVcReviewItems] = useState([])
+  const fetchingRef = useRef(false)
 
   
   const { user, loading: authLoading, signOut } = useAuth()
@@ -61,7 +61,7 @@ export default function Home() {
   // Fetch user profile and determine role
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (user) {
+      if (user && !role) { // Only fetch if user exists and role is not set
         try {
           const profile = await profilesService.getProfile(user.id);
           setProfile(profile);
@@ -82,7 +82,7 @@ export default function Home() {
           console.log('Error fetching profile, defaulting to VC')
           setRole('vc')
         }
-      } else {
+      } else if (!user) {
         // No user, set role to null to show auth component
         console.log('No user, setting role to null')
         setRole(null)
@@ -90,12 +90,13 @@ export default function Home() {
     }
 
     fetchUserProfile()
-  }, [user, roleChangeTrigger]) // Add roleChangeTrigger as dependency
+  }, [user, role]) // Add role as dependency to prevent re-fetching when role is already set
 
   // Fetch PDFs from database
   useEffect(() => {
     const fetchPdfs = async () => {
-      if (user && role) { // Only fetch if both user and role are available
+      if (user && role && !loading && !fetchingRef.current) { // Only fetch if both user and role are available and not already loading
+        fetchingRef.current = true
         try {
           console.log('Fetching PDFs for user:', user.id, 'role:', role)
           if (role === 'vc') {
@@ -214,6 +215,7 @@ export default function Home() {
           setConnectionRequests([])
         } finally {
           setLoading(false)
+          fetchingRef.current = false
         }
       } else if (user && !role) {
         console.log('User exists but role not set yet')
@@ -364,8 +366,6 @@ export default function Home() {
   const handleRoleChange = (newRole) => {
     console.log('Role change requested to:', newRole)
     setRole(newRole)
-    // Trigger a profile re-fetch by incrementing the trigger
-    setRoleChangeTrigger(prev => prev + 1)
   }
 
   const handleSendConnectionRequest = async (founderId, ideaId, message) => {

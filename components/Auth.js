@@ -123,6 +123,18 @@ export default function Auth() {
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload();
+                }}
+                className="text-red-500 hover:text-red-600 transition-colors text-sm"
+              >
+                Clear all data and reload
+              </button>
+            </div>
           </div>
         </div>
       </NapkinCard>
