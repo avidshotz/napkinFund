@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+
 import { pdfsService, profilesService, connectionsService } from '../lib/database'
 import { supabase } from '../lib/supabase'
 import SwipeNapkin from '../SwipeNapkin'
@@ -10,6 +11,8 @@ import MatchesNapkin from '../components/MatchesNapkin'
 import ConnectionRequestsList from '../components/ConnectionRequestsList'
 import LikesList from '../components/LikesList'
 import VCLikedIdeasList from '../components/VCLikedIdeasList'
+import VCUnreviewedIdeas from '../components/VCUnreviewedIdeas'
+import VCMatchedIdeas from '../components/VCMatchedIdeas'
 import AppLayout from '../components/AppLayout'
 import Auth from '../components/Auth'
 import LikesModal from '../components/LikesModal'
@@ -37,6 +40,9 @@ export default function Home() {
   const [creativeIdeas, setCreativeIdeas] = useState([])
   const [likedIdeas, setLikedIdeas] = useState([])
   const [matchedIdeas, setMatchedIdeas] = useState([])
+  // Add state for the two VC napkins
+  const [vcUnreviewedIdeas, setVcUnreviewedIdeas] = useState([])
+  const [vcMatchedIdeas, setVcMatchedIdeas] = useState([])
   const [vcLikedIdeas, setVcLikedIdeas] = useState([])
   const [vcsWithLikedIdeas, setVcsWithLikedIdeas] = useState([])
   const [connectionRequests, setConnectionRequests] = useState([])
@@ -55,7 +61,6 @@ export default function Home() {
   const [vcReviewItems, setVcReviewItems] = useState([])
   const fetchingRef = useRef(false)
 
-  
   const { user, loading: authLoading, signOut } = useAuth()
 
   // Fetch user profile and determine role
@@ -65,22 +70,34 @@ export default function Home() {
         try {
           const profile = await profilesService.getProfile(user.id);
           setProfile(profile);
-          // If profile is missing required fields, show onboarding
-          if (!profile?.name || !profile?.isLooking || !profile?.history || !profile?.lookingfor || !profile?.link || (profile.isLooking === false && !profile?.vcphotourl)) {
+          
+          // Check if profile exists and has all required fields
+          if (!profile) {
+            console.log('No profile found, showing onboarding')
             setShowOnboarding(true);
+            setRole(null);
           } else {
-            setShowOnboarding(false);
+            console.log('Profile validation - name:', !!profile.name, 'isLooking:', profile.isLooking, 'history:', !!profile.history, 'lookingfor:', !!profile.lookingfor, 'link:', !!profile.link)
+            
+            if (!profile.name || profile.isLooking === undefined || !profile.history || !profile.lookingfor || !profile.link) {
+              console.log('Profile incomplete, showing onboarding')
+              setShowOnboarding(true);
+              setRole(null); // Don't set role until profile is complete
+            } else {
+              setShowOnboarding(false);
+              // Determine role based on isLooking field
+              // isLooking = true -> founder, isLooking = false -> vc
+              const userRole = profile.isLooking ? 'founder' : 'vc'
+              console.log('Setting role to:', userRole, 'based on isLooking:', profile.isLooking)
+              setRole(userRole)
+            }
           }
-            // Determine role based on isLooking field
-            // isLooking = true -> founder, isLooking = false -> vc
-            const userRole = profile.isLooking ? 'founder' : 'vc'
-            console.log('Setting role to:', userRole)
-            setRole(userRole)
         } catch (error) {
           console.error('Error fetching user profile:', error)
-          // Default to VC on error
-          console.log('Error fetching profile, defaulting to VC')
-          setRole('vc')
+          // If no profile exists, show onboarding instead of defaulting to VC
+          console.log('No profile found due to error, showing onboarding')
+          setShowOnboarding(true)
+          setRole(null) // Don't set role until profile is created
         }
       } else if (!user) {
         // No user, set role to null to show auth component
@@ -114,6 +131,54 @@ export default function Home() {
             const curiousConnections = await connectionsService.getConnectionsByStatus(user.id, 'curious');
             setLikedIdeas(userLikedPdfs); // (if you use this elsewhere)
 
+            // Split into two napkins for VCs:
+            // 1. Unreviewed Ideas: ideas the VC hasn't liked yet
+            const interactedPdfIds = [...userLikedPdfs.map(pdf => pdf.id), ...userPassedPdfs.map(pdf => pdf.id)];
+            const unreviewedPdfs = allPdfs.filter(pdf => !interactedPdfIds.includes(pdf.id));
+            
+            // Debug specific idea filtering (remove after testing)
+            // const targetIdeaId = '0b1d2230-a5ed-467d-9837-7cb87506d777';
+            // const targetInPassed = userPassedPdfs.find(pdf => pdf.id === targetIdeaId);
+            // if (targetInPassed) console.log('🔍 Target idea still in passed list');
+            
+            let unreviewedPdfsWithCreator = [];
+            if (unreviewedPdfs.length > 0) {
+              const { data: unreviewedPdfsData, error: unreviewedPdfsError } = await supabase
+                .from('pdfs')
+                .select('*, creator:user_id (name, link, vcphotourl)')
+                .in('id', unreviewedPdfs.map(pdf => pdf.id))
+                .order('created_at', { ascending: false });
+              if (!unreviewedPdfsError) {
+                unreviewedPdfsWithCreator = unreviewedPdfsData
+                    .filter(pdf => pdf.creator)
+                  .map(pdf => ({
+                    ...pdf,
+                    creatorName: pdf.creator?.name || 'Unknown',
+                    creatorLinkedin: pdf.creator?.link,
+                    creatorPhoto: pdf.creator?.vcphotourl
+                  }));
+              }
+            }
+            setVcUnreviewedIdeas(unreviewedPdfsWithCreator);
+
+            // 2. Matched Ideas: ideas where both VC and founder have liked each other (status: pending)
+            // Filter to only include connections where current user is the VC
+            const vcPendingConnections = pendingConnections.filter(conn => conn.vc_id === user.id);
+            const matchedConnections = vcPendingConnections.map(conn => ({
+              // Spread the idea object but preserve important IDs
+              ...conn.idea,
+              id: conn.idea_id, // Ensure idea ID is present
+              user_id: conn.founder_id, // Add founder ID for connection requests
+              creatorName: conn.founder?.name || 'Unknown',
+              creatorLinkedin: conn.founder?.link,
+              creatorPhoto: conn.founder?.vcphotourl,
+              connectionId: conn.id,
+              connectionStatus: conn.status,
+              created_at: conn.created_at,
+              updated_at: conn.updated_at
+            }));
+            setVcMatchedIdeas(matchedConnections);
+
             // VCLikesModal: only show 'curious' status
             const vcsWithLikedIdeas = (curiousConnections || []).map(conn => ({
               vcId: conn.vc_id,
@@ -125,11 +190,13 @@ export default function Home() {
             setVcsWithLikedIdeas(vcsWithLikedIdeas);
 
             // ConnectionsModal: show 'pending', 'requested', 'connected'
-            const allConnectionRequests = [
-              ...pendingConnections,
-              ...requestedConnections,
-              ...connectedConnections
-            ].map(conn => ({
+            // Filter connections where current user is the VC
+            const vcConnections = [
+              ...pendingConnections.filter(conn => conn.vc_id === user.id),
+              ...requestedConnections.filter(conn => conn.vc_id === user.id),
+              ...connectedConnections.filter(conn => conn.vc_id === user.id)
+            ];
+            const allConnectionRequests = vcConnections.map(conn => ({
               ...conn,
               founderName: conn.founder?.name || `Founder ${conn.founder_id?.slice(0, 8)}...`,
               founderLinkedin: conn.founder?.link,
@@ -140,28 +207,8 @@ export default function Home() {
           // PassedIdeasModal: use the passed PDFs from connections table
           setPassedIdeas(userPassedPdfs);
 
-          // Main feed: fetch unliked and unpassed PDFs with creator info
-          let unlikedPdfsWithCreator = [];
-            const interactedPdfIds = [...userLikedPdfs.map(pdf => pdf.id), ...userPassedPdfs.map(pdf => pdf.id)];
-            const unlikedPdfs = allPdfs.filter(pdf => !interactedPdfIds.includes(pdf.id));
-          if (unlikedPdfs.length > 0) {
-            const { data: unlikedPdfsData, error: unlikedPdfsError } = await supabase
-              .from('pdfs')
-              .select('*, creator:user_id (name, link, vcphotourl)')
-              .in('id', unlikedPdfs.map(pdf => pdf.id))
-              .order('created_at', { ascending: false });
-            if (!unlikedPdfsError) {
-              unlikedPdfsWithCreator = unlikedPdfsData
-                  .filter(pdf => pdf.creator)
-                .map(pdf => ({
-                  ...pdf,
-                  creatorName: pdf.creator?.name || 'Unknown',
-                  creatorLinkedin: pdf.creator?.link,
-                  creatorPhoto: pdf.creator?.vcphotourl
-                }));
-            }
-          }
-          setCreativeIdeas(unlikedPdfsWithCreator);
+          // Clear founder-specific data for VCs
+          setCreativeIdeas([]);
 
           // AccountModal: fetch user profile
           const { data: profileData, error: profileError } = await supabase
@@ -203,6 +250,10 @@ export default function Home() {
             setMatchedIdeas([]);
             setVcLikedIdeas([]);
             setVcReviewItems(curiousConnections);
+            
+            // Clear VC-specific data for founders
+            setVcUnreviewedIdeas([]);
+            setVcMatchedIdeas([]);
           }
         } catch (error) {
           console.error('Error fetching PDFs:', error)
@@ -211,6 +262,8 @@ export default function Home() {
           setPassedIdeas([])
           setMatchedIdeas([])
           setVcLikedIdeas([])
+          setVcUnreviewedIdeas([])
+          setVcMatchedIdeas([])
           setVcsWithLikedIdeas([])
           setConnectionRequests([])
         } finally {
@@ -226,7 +279,20 @@ export default function Home() {
     }
 
     fetchPdfs()
-  }, [user, role])
+  }, [user, role, loading])
+
+  // Simple refresh function for manual refresh
+  const refreshData = async () => {
+    if (user && role && !fetchingRef.current) {
+      fetchingRef.current = true
+      setLoading(true)
+      // Trigger re-fetch by updating a dependency
+      setLoading(false)
+      fetchingRef.current = false
+      // Force re-render by updating loading state
+      window.location.reload()
+    }
+  }
 
   const handleSubmit = async () => {
     if (oneLiner.trim() && user) {
@@ -242,19 +308,29 @@ export default function Home() {
   }
 
   const handleLike = async (id) => {
-    console.log('[handleLike] Called with id:', id, 'creativeIdeas:', creativeIdeas)
+    console.log('[handleLike] Called with id:', id, 'role:', role)
     try {
-      const pdf = creativeIdeas.find(i => i.id === id)
-      if (pdf) {
-        // Like the PDF
-        await pdfsService.likePdf(id, user.id)
-        
-        // Move PDF from creativeIdeas to likedIdeas
-        setCreativeIdeas(creativeIdeas.filter(p => p.id !== id))
-        setLikedIdeas([pdf, ...likedIdeas])
-        
-        // No need to refresh matched PDFs in new system
-        // The connection system handles this automatically
+      if (role === 'vc') {
+        // VC liking an unreviewed idea
+        const pdf = vcUnreviewedIdeas.find(i => i.id === id)
+        if (pdf) {
+          // Create curious connection for VC liking an idea
+          await connectionsService.createCuriousConnection(user.id, pdf.user_id, id)
+          
+          // Remove from unreviewed ideas
+          setVcUnreviewedIdeas(vcUnreviewedIdeas.filter(i => i.id !== id))
+          
+          // Add to liked ideas
+          setLikedIdeas([...likedIdeas, pdf])
+        }
+      } else {
+        // Founder logic (unchanged)
+        const pdf = creativeIdeas.find(i => i.id === id)
+        if (pdf) {
+          await pdfsService.likePdf(id, user.id)
+          setCreativeIdeas(creativeIdeas.filter(p => p.id !== id))
+          setLikedIdeas([pdf, ...likedIdeas])
+        }
       }
     } catch (error) {
       console.error('Error liking PDF:', error)
@@ -263,25 +339,76 @@ export default function Home() {
   }
 
   const handlePassVc = async (index) => {
-    const currentPdf = creativeIdeas[index]
-    console.log('handlePassVc called with index:', index, 'pdf:', currentPdf)
-    
+    if (role === 'vc') {
+      // VC passing on an unreviewed idea
+      const currentPdf = vcUnreviewedIdeas[index]
+      console.log('handlePassVc called with index:', index, 'pdf:', currentPdf)
+      
+      try {
+        const result = await pdfsService.passPdf(currentPdf.id, user.id)
+        console.log('passPdf result:', result)
+        
+        // Remove from unreviewed ideas
+        const remainingPdfs = vcUnreviewedIdeas.filter((_, i) => i !== index)
+        console.log('Remaining PDFs after pass:', remainingPdfs.length)
+        setVcUnreviewedIdeas(remainingPdfs)
+        
+        // Refresh passed ideas from database
+        const refreshedPassedPdfs = await pdfsService.getPassedPdfsByUser(user.id)
+        console.log('Refreshed passed PDFs:', refreshedPassedPdfs.length)
+        setPassedIdeas(refreshedPassedPdfs)
+      } catch (error) {
+        console.error('Error passing PDF:', error)
+        alert('Failed to pass PDF. Please try again.')
+      }
+    } else {
+      // Founder logic (unchanged)
+      const currentPdf = creativeIdeas[index]
+      console.log('handlePassVc called with index:', index, 'pdf:', currentPdf)
+      
+      try {
+        const result = await pdfsService.passPdf(currentPdf.id, user.id)
+        console.log('passPdf result:', result)
+        
+        const remainingPdfs = creativeIdeas.filter((_, i) => i !== index)
+        console.log('Remaining PDFs after pass:', remainingPdfs.length)
+        setCreativeIdeas(remainingPdfs)
+        
+        const refreshedPassedPdfs = await pdfsService.getPassedPdfsByUser(user.id)
+        console.log('Refreshed passed PDFs:', refreshedPassedPdfs.length)
+        setPassedIdeas(refreshedPassedPdfs)
+      } catch (error) {
+        console.error('Error passing PDF:', error)
+      }
+    }
+  }
+
+  const handlePassMatched = async (index) => {
+    const idea = vcMatchedIdeas[index]
+    if (idea) {
+      try {
+        await connectionsService.updateConnectionStatus(idea.connectionId, 'blocked')
+        setVcMatchedIdeas(vcMatchedIdeas.filter((_, i) => i !== index))
+      } catch (error) {
+        console.error('Error passing matched idea:', error)
+        alert('Failed to pass idea. Please try again.')
+      }
+    }
+  }
+
+  const handleConnect = async (idea) => {
     try {
-      // Save to database
-      const result = await pdfsService.passPdf(currentPdf.id, user.id)
-      console.log('passPdf result:', result)
-      
-      // Remove from creativeIdeas
-      const remainingPdfs = creativeIdeas.filter((_, i) => i !== index)
-      console.log('Remaining PDFs after pass:', remainingPdfs.length)
-      setCreativeIdeas(remainingPdfs)
-      
-      // Refresh passed ideas from database to ensure consistency
-      const refreshedPassedPdfs = await pdfsService.getPassedPdfsByUser(user.id)
-      console.log('Refreshed passed PDFs:', refreshedPassedPdfs.length)
-      setPassedIdeas(refreshedPassedPdfs)
+      const result = await connectionsService.requestConnection(user.id, idea.user_id, idea.id, 'Hello! I\'d like to connect about your idea.')
+      if (result) {
+        // Remove from matched ideas
+        setVcMatchedIdeas(vcMatchedIdeas.filter(i => i.id !== idea.id))
+        alert('Connection request sent successfully!')
+      } else {
+        alert('Failed to send connection request. Please try again.')
+      }
     } catch (error) {
-      console.error('Error passing PDF:', error)
+      console.error('Error sending connection request:', error)
+      alert('Failed to send connection request. Please try again.')
     }
   }
 
@@ -295,8 +422,12 @@ export default function Home() {
         // Remove from likedIdeas
         setLikedIdeas(likedIdeas.filter(p => p.id !== id))
         
-        // Add back to creativeIdeas
-        setCreativeIdeas([...creativeIdeas, pdf])
+        // Add back to appropriate list
+        if (role === 'vc') {
+          setVcUnreviewedIdeas([pdf, ...vcUnreviewedIdeas])
+        } else {
+          setCreativeIdeas([...creativeIdeas, pdf])
+        }
       }
     } catch (error) {
       console.error('Error unliking PDF:', error)
@@ -308,14 +439,44 @@ export default function Home() {
     try {
       const pdf = passedIdeas.find(i => i.id === id)
       if (pdf) {
+        console.log('🔄 Unpassing PDF:', id)
+        
         // Unpass the PDF
         await pdfsService.unpassPdf(id, user.id)
+        console.log('✅ Database unpass successful')
         
         // Remove from passedIdeas
         setPassedIdeas(passedIdeas.filter(p => p.id !== id))
+        console.log('✅ Removed from passed ideas state')
         
-        // Add back to creativeIdeas
-        setCreativeIdeas([...creativeIdeas, pdf])
+        // For VCs, we need to fetch the idea with creator data and add to unreviewed
+        if (role === 'vc') {
+          try {
+            console.log('🔍 Fetching idea with creator data for unreviewed list')
+            const { data: pdfWithCreator, error } = await supabase
+              .from('pdfs')
+              .select('*, creator:user_id (name, link, vcphotourl)')
+              .eq('id', id)
+              .single()
+            
+            if (!error && pdfWithCreator && pdfWithCreator.creator) {
+              const formattedPdf = {
+                ...pdfWithCreator,
+                creatorName: pdfWithCreator.creator?.name || 'Unknown',
+                creatorLinkedin: pdfWithCreator.creator?.link,
+                creatorPhoto: pdfWithCreator.creator?.vcphotourl
+              };
+              setVcUnreviewedIdeas([formattedPdf, ...vcUnreviewedIdeas])
+              console.log('✅ Added to unreviewed ideas with creator data')
+            } else {
+              console.warn('⚠️ Could not fetch creator data, idea may not appear in unreviewed')
+            }
+          } catch (fetchError) {
+            console.error('Error fetching idea with creator:', fetchError)
+          }
+        } else {
+          setCreativeIdeas([...creativeIdeas, pdf])
+        }
       }
     } catch (error) {
       console.error('Error unpassing PDF:', error)
@@ -459,14 +620,14 @@ export default function Home() {
   }
 
   // Show loading state
-  if (authLoading || (loading && user) || (role === null && user)) {
+  if (authLoading || (loading && user)) {
     console.log('Showing loading state:', { 
       authLoading, 
       loading, 
       role, 
       roleIsNull: role === null,
       user: user?.email,
-      shouldShowLoading: authLoading || (loading && user) || (role === null && user)
+      shouldShowLoading: authLoading || (loading && user)
     })
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -479,6 +640,21 @@ export default function Home() {
   if (!user) {
     console.log('No user, showing Auth component')
     return <Auth />
+  }
+
+  // Show onboarding if needed
+  if (showOnboarding) {
+    return (
+      <Onboarding 
+        user={user} 
+        profile={profile}
+        onComplete={() => {
+          setShowOnboarding(false)
+          // Refresh the profile data after onboarding
+          window.location.reload()
+        }}
+      />
+    )
   }
 
   console.log('User authenticated, showing main app:', { user: user?.email, role })
@@ -498,20 +674,29 @@ export default function Home() {
       <div className="flex items-center justify-center p-8">
         <div className="max-w-2xl mx-auto w-full">
           <div className="flex flex-col items-center space-y-8">
-            {/* VC Mode Layout */}
+            {/* VC Mode Layout - Two Napkins */}
             {role === 'vc' && (
               <>
-                <SwipeNapkin
-                  title="VCs"
-                  description="Capture your founders."
-                  items={creativeIdeas}
+                <VCUnreviewedIdeas
+                  title="Ideas to Review"
+                  description="New ideas waiting for your review."
+                  items={vcUnreviewedIdeas}
                   onLike={handleLike}
                   onPass={handlePassVc}
-                  emptyMessage="No ideas yet. Submit one above!"
+                  emptyMessage="No new ideas to review."
                   width={600}
                   height={400}
                 />
-                {/* Removed ConnectionRequestsList for VC */}
+                <VCMatchedIdeas
+                  title="Matches"
+                  description="Ideas where both you and the founder have shown interest."
+                  items={vcMatchedIdeas}
+                  onConnect={handleConnect}
+                  onPass={handlePassMatched}
+                  emptyMessage="No matches yet."
+                  width={600}
+                  height={400}
+                />
               </>
             )}
 
@@ -526,25 +711,34 @@ export default function Home() {
                   height={400}
                 />
                 {/* VC Review Napkin for founders */}
-                <SwipeNapkin
-                  title="VCs Interested In You"
-                  description="Review VCs who liked your ideas. Like to match, or pass to remove."
-                  items={vcReviewItems}
-                  onLike={handleFounderLikeVC}
-                  onPass={handleFounderPassVC}
-                  emptyMessage="No VCs have liked your ideas yet."
-                  width={600}
-                  height={400}
-                  renderItem={item => (
-                    <div className="flex flex-col items-center">
-                      <div className="font-semibold text-lg mb-1">{item.vc?.name || 'VC'}</div>
-                      {item.vc?.link && (
-                        <a href={item.vc.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm mb-1">LinkedIn</a>
-                      )}
-                      <div className="text-gray-700 text-sm">Idea: <span className="font-medium">{item.idea?.idea_name || ''}</span></div>
-                    </div>
-                  )}
-                />
+                <div className="relative">
+                  <SwipeNapkin
+                    title="VCs Interested In You"
+                    description="Review VCs who liked your ideas. Like to match, or pass to remove."
+                    items={vcReviewItems}
+                    onLike={handleFounderLikeVC}
+                    onPass={handleFounderPassVC}
+                    emptyMessage="No VCs have liked your ideas yet."
+                    width={600}
+                    height={400}
+                    renderItem={item => (
+                      <div className="flex flex-col items-center">
+                        <div className="font-semibold text-lg mb-1">{item.vc?.name || 'VC'}</div>
+                        {item.vc?.link && (
+                          <a href={item.vc.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm mb-1">LinkedIn</a>
+                        )}
+                        <div className="text-gray-700 text-sm">Idea: <span className="font-medium">{item.idea?.idea_name || ''}</span></div>
+                      </div>
+                    )}
+                  />
+                  <button
+                    onClick={refreshData}
+                    className="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
+                    title="Refresh to see new VCs who liked your ideas"
+                  >
+                    Refresh
+                  </button>
+                </div>
               </>
             )}
           </div>

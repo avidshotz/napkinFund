@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
+import Image from 'next/image'
 import NapkinCard from '../NapkinCard'
 
 export default function PassedIdeasModal({ 
@@ -77,9 +78,11 @@ export default function PassedIdeasModal({
                       {idea.creatorName && (
                         <div className="flex items-center space-x-2 mb-2">
                           {idea.creatorPhoto && (
-                            <img 
+                            <Image 
                               src={idea.creatorPhoto} 
                               alt={idea.creatorName}
+                              width={24}
+                              height={24}
                               className="w-6 h-6 rounded-full object-cover"
                             />
                           )}

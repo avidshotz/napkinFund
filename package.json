@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:multi1": "next dev -p 3001 -H 0.0.0.0",
+    "dev:multi2": "next dev -p 3002 -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

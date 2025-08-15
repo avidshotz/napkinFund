@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 export default function ModalItem({ 
   item, 
   onAction, 
@@ -14,9 +16,11 @@ export default function ModalItem({
         {showProfile && (
           <div className="flex flex-col items-center mb-2">
             {item.creatorPhoto && (
-              <img
+              <Image
                 src={item.creatorPhoto}
                 alt="Profile"
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-full object-cover border border-gray-300 mb-1"
               />
             )}

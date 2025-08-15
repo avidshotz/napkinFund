@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { profilesService } from '../lib/database';
 import { onboardingQuestions } from '../app/page';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Onboarding({ user, profile, onComplete }) {
+  const { signOut } = useAuth();
   const [form, setForm] = useState({
     name: profile?.name || '',
     isLooking: profile?.isLooking === false ? 'vc' : 'founder',
@@ -44,22 +46,13 @@ export default function Onboarding({ user, profile, onComplete }) {
       return;
     }
     let profilePicUrl = form.vcphotourl;
-    if (form.isLooking === 'vc') {
-      if (!profilePicFile && !form.vcphotourl) {
-        setForm(f => ({ ...f, error: 'VCs must upload a profile picture.', loading: false }));
-        return;
-      }
-      if (profilePicFile) {
-        try {
-          profilePicUrl = await uploadProfilePic(profilePicFile);
-        } catch (err) {
-          setForm(f => ({ ...f, error: 'Failed to upload profile picture.', loading: false }));
-          return;
-        }
-      }
-      if (!profilePicUrl) {
-        setForm(f => ({ ...f, error: 'Failed to get profile picture URL.', loading: false }));
-        return;
+    if (form.isLooking === 'vc' && profilePicFile) {
+      try {
+        profilePicUrl = await uploadProfilePic(profilePicFile);
+      } catch (err) {
+        console.warn('Profile picture upload failed, continuing without it:', err);
+        // Don't fail the entire onboarding process for profile picture issues
+        profilePicUrl = null;
       }
     }
     try {
@@ -79,26 +72,42 @@ export default function Onboarding({ user, profile, onComplete }) {
   };
 
   useEffect(() => {
-    if (showOnboarding) {
-      const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-          // You might want to prevent closing onboarding with escape
-          // Or add a way to close it
-        }
-      }
-
-      document.addEventListener('keydown', handleEscape)
-
-      return () => {
-        document.removeEventListener('keydown', handleEscape)
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        // You might want to prevent closing onboarding with escape
+        // Or add a way to close it
       }
     }
-  }, [showOnboarding])
+
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [])
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // The auth context will handle redirecting to the auth page
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 w-full max-w-sm space-y-6">
-        <h2 className="text-2xl font-bold mb-4 text-center">Welcome! Let&apos;s set up your profile</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-center flex-1">Welcome! Let&apos;s set up your profile</h2>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="text-gray-500 hover:text-gray-700 text-sm underline"
+          >
+            Sign Out
+          </button>
+        </div>
         {onboardingQuestions.map(q => (
           <div key={q.key} className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">{q.label}</label>
@@ -127,13 +136,12 @@ export default function Onboarding({ user, profile, onComplete }) {
         {/* VC profile picture upload */}
         {form.isLooking === 'vc' && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Upload a profile picture (required for VCs)</label>
+            <label className="block text-sm font-medium text-gray-700">Upload a profile picture (optional)</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleFileChange}
               className="w-full p-2 border border-gray-300 rounded-md"
-              required={!form.vcphotourl}
             />
             {form.vcphotourl && (
               <p className="text-xs text-gray-600 mt-1">Selected: {form.vcphotourl}</p>

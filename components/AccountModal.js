@@ -77,7 +77,7 @@ export default function AccountModal({
     }
 
     fetchProfile()
-  }, [user?.id, isOpen])
+  }, [user, isOpen])
 
   const handleRoleChange = async (newRole) => {
     if (!user || newRole === role) return

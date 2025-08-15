@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import NapkinCard from './NapkinCard'
+import LikeHistory from './components/LikeHistory'
 
 export default function SwipeNapkin({ 
   title, 
@@ -12,7 +13,8 @@ export default function SwipeNapkin({
   width = 400, 
   height = 300,
   emptyMessage = "No items yet.",
-  renderItem
+  renderItem,
+  showLikeHistory = true
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -44,7 +46,7 @@ export default function SwipeNapkin({
             {renderItem
               ? renderItem(items[currentIndex])
               : (
-                <>
+                <div>
                   <p className="text-sm font-medium">{items[currentIndex]?.idea_name || 'Loading...'}</p>
                   {(items[currentIndex]?.creatorLinkedin || items[currentIndex]?.vcLinkedin || items[currentIndex]?.founderLinkedin) && (
                     <a
@@ -56,7 +58,7 @@ export default function SwipeNapkin({
                       LinkedIn
                     </a>
                   )}
-                </>
+                </div>
               )
             }
           </div>
@@ -86,6 +88,13 @@ export default function SwipeNapkin({
         <div className="flex items-center justify-center h-48">
           <p className="text-gray-500">{emptyMessage}</p>
         </div>
+      )}
+      {/* LikeHistory positioned relative to the full napkin */}
+      {showLikeHistory && items.length > 0 && (
+        <LikeHistory 
+          item={items[currentIndex]} 
+          userRole={title === "VCs Interested In You" ? "founder" : "vc"} 
+        />
       )}
     </NapkinCard>
   )

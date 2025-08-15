@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import NapkinModal from './NapkinModal'
 
 export default function VCLikesModal({ 
@@ -24,7 +25,7 @@ export default function VCLikesModal({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
                   {vc.vcPhoto && (
-                    <img src={vc.vcPhoto} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-gray-300 mr-2" />
+                    <Image src={vc.vcPhoto} alt="Profile" width={32} height={32} className="w-8 h-8 rounded-full object-cover border border-gray-300 mr-2" />
                   )}
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-800">{vc.vcName}</span>
