@@ -114,6 +114,10 @@ export default function Home() {
     const fetchPdfs = async () => {
       if (user && role && !loading && !fetchingRef.current) { // Only fetch if both user and role are available and not already loading
         fetchingRef.current = true
+        
+        // Add a small delay to ensure authentication is fully settled
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
         try {
           console.log('Fetching PDFs for user:', user.id, 'role:', role)
           if (role === 'vc') {

@@ -17,7 +17,7 @@ export default function AppLayout({
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold text-gray-800">
-              Napkin Reborn
+              Napkin Fund
             </h1>
           </div>
           

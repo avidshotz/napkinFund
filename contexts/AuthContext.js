@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { invalidateSessionCache } from '../lib/database'
 
 const AuthContext = createContext({})
 
@@ -33,32 +34,8 @@ export const AuthProvider = ({ children }) => {
         console.log('Session result:', { hasSession: !!session, user: session?.user?.email })
         
         if (session) {
-          // Check if session is expired
-          const now = Math.floor(Date.now() / 1000)
-          const expiresAt = session.expires_at || 0
-          
-          if (expiresAt < now) {
-            console.log('Session expired, attempting refresh...')
-            try {
-              const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
-              if (error) {
-                console.warn('Session refresh failed:', error.message)
-                setUser(null)
-              } else if (refreshedSession) {
-                console.log('Session refreshed successfully')
-                setUser(refreshedSession.user)
-              } else {
-                console.log('No refreshed session returned')
-                setUser(null)
-              }
-            } catch (refreshError) {
-              console.warn('Session refresh error:', refreshError.message)
-              setUser(null)
-            }
-          } else {
-            console.log('Session is valid')
-            setUser(session.user)
-          }
+          console.log('Session found, setting user')
+          setUser(session.user)
         } else {
           console.log('No session found')
           setUser(null)
@@ -91,6 +68,27 @@ export const AuthProvider = ({ children }) => {
         if (event === 'TOKEN_REFRESHED') {
           // Don't update state for token refreshes to prevent infinite loops
           console.log('Token refreshed, not updating state')
+          return
+        }
+        
+        // Handle sign out gracefully
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out, clearing state')
+          invalidateSessionCache() // Clear session cache
+          setUser(null)
+          setLoading(false)
+          clearTimeout(timeoutId)
+          return
+        }
+        
+        // For sign in events, add a small delay to ensure session is fully established
+        if (event === 'SIGNED_IN') {
+          console.log('User signed in, setting state after brief delay')
+          setTimeout(() => {
+            setUser(session?.user ?? null)
+            setLoading(false)
+            clearTimeout(timeoutId)
+          }, 100)
           return
         }
         
@@ -133,6 +131,7 @@ export const AuthProvider = ({ children }) => {
       return { error: { message: 'Supabase not configured' } }
     }
     console.log('Signing out...')
+    invalidateSessionCache() // Clear session cache before signing out
     const { error } = await supabase.auth.signOut()
     if (!error) {
       setUser(null)
