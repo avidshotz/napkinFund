@@ -16,6 +16,7 @@ export default function BaseCardComponent({
   userRole = 'vc',
   emptyStateMessage = 'No items to display',
   className = '',
+  renderContent,
   ...props
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -184,15 +185,76 @@ export default function BaseCardComponent({
     )
   }, [])
 
-  // Abstract method - must be implemented by child components
-  const renderContent = useCallback(() => {
-    throw new Error('renderContent method must be implemented by child components')
-  }, [])
+  // Default renderContent implementation if none provided
+  const defaultRenderContent = useCallback(() => {
+    if (!items.length) {
+      return renderEmptyState()
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center space-y-6 w-full">
+        <div className="text-center w-full">
+          {renderItem(currentItem, userRole)}
+        </div>
+        
+        <div className="flex items-center justify-center space-x-3">
+          <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+            {currentIndex + 1} of {items.length}
+          </span>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex items-center justify-center space-x-4">
+            {userRole === 'vc' && (
+              <>
+                <button 
+                  onClick={() => handleAction('like')}
+                  className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 
+                             hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white 
+                             rounded-xl font-bold text-lg transition-all duration-300 hover:scale-105 active:scale-95
+                             focus:ring-4 focus:ring-amber-500/50 focus:ring-offset-2
+                             shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5
+                             border-2 border-amber-400"
+                  title="Like this idea"
+                >
+                  <span className="w-2 h-2 bg-white rounded-full"></span>
+                  like
+                </button>
+                <button 
+                  onClick={() => handlePass(currentIndex)}
+                  className="px-8 py-4 bg-gradient-to-r from-slate-600 to-slate-700 
+                             hover:from-slate-700 hover:to-slate-800 text-white rounded-xl font-bold text-lg
+                             transition-all duration-300 hover:scale-105 active:scale-95
+                             shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             border-2 border-slate-500"
+                  disabled={items.length === 0}
+                >
+                  ghost
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }, [items, currentItem, currentIndex, userRole, handleAction, handlePass, renderItem, renderEmptyState])
 
   return (
     <div className={`relative ${className}`}>
       <div className="relative min-h-[200px] flex flex-col w-full max-w-2xl mx-auto py-8">
-        {renderContent()}
+        {renderContent ? renderContent({ 
+          items, 
+          currentItem, 
+          currentIndex, 
+          userRole, 
+          handleAction, 
+          handlePass, 
+          renderItem, 
+          renderEmptyState,
+          isTransitioning,
+          lastActionType
+        }) : defaultRenderContent()}
         {currentItem && renderLikeHistory(currentItem, userRole)}
       </div>
     </div>
