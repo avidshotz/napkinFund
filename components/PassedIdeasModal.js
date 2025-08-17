@@ -53,7 +53,7 @@ export default function PassedIdeasModal({
       <div className="max-w-lg w-full max-h-[80vh] overflow-y-auto">
         <NapkinCard width="100%" height="auto">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Passed Ideas</h2>
+            <h2 className="text-xl font-semibold">ghosted ideas</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -64,7 +64,7 @@ export default function PassedIdeasModal({
           
           {passedIdeas.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">No passed ideas yet.</p>
+              <p className="text-gray-500">no ghosted ideas yet.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -102,15 +102,15 @@ export default function PassedIdeasModal({
                         </div>
                       )}
                       <p className="text-xs text-gray-500">
-                        Passed on {new Date(idea.created_at).toLocaleDateString()}
+                        ghosted on {new Date(idea.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <button
                       onClick={() => handleUnpass(idea.id)}
                       className="ml-4 px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
-                      title="Unpass this idea"
+                      title="unghost this idea"
                     >
-                      Unpass
+                      unghost
                     </button>
                   </div>
                 </div>

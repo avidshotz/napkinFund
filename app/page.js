@@ -18,11 +18,11 @@ import Auth from '../components/Auth'
 import LikesModal from '../components/LikesModal'
 import SubmittedIdeasModal from '../components/SubmittedIdeasModal'
 import VCLikesModal from '../components/VCLikesModal'
-import AccountModal from '../components/AccountModal'
-import NapkinCornerButton, { createNapkinButtons } from '../components/NapkinCornerButton'
-import BottomNapkinBar from '../components/BottomNapkinBar';
+import PersistentLeftSidebar from '../components/PersistentLeftSidebar'
+import ProfileModal from '../components/ProfileModal'
+import ConnectionsModal from '../components/ConnectionsModal'
+import ModernTabBar from '../components/ModernTabBar'
 import Onboarding from '../components/Onboarding';
-import ConnectionsModal from '../components/ConnectionsModal';
 import PassedIdeasModal from '../components/PassedIdeasModal';
 import OnelinersModal from '../components/OnelinersModal';
 
@@ -50,14 +50,15 @@ export default function Home() {
   const [isLikesModalOpen, setIsLikesModalOpen] = useState(false)
   const [isSubmittedIdeasModalOpen, setIsSubmittedIdeasModalOpen] = useState(false)
   const [isVCLikesModalOpen, setIsVCLikesModalOpen] = useState(false)
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isConnectionsModalOpen, setIsConnectionsModalOpen] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isPassedIdeasModalOpen, setIsPassedIdeasModalOpen] = useState(false)
   const [isOnelinersModalOpen, setIsOnelinersModalOpen] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [profile, setProfile] = useState(null);
   const [passedIdeas, setPassedIdeas] = useState([])
   const [isPendingConnectionsModalOpen, setIsPendingConnectionsModalOpen] = useState(false);
-  const [isConnectionsModalOpen, setIsConnectionsModalOpen] = useState(false);
   const [vcReviewItems, setVcReviewItems] = useState([])
   const fetchingRef = useRef(false)
 
@@ -595,7 +596,7 @@ export default function Home() {
   }
 
   const handleOnelinersButtonClick = () => {
-    setIsAccountModalOpen(false)
+    setIsProfileModalOpen(false)
     setIsOnelinersModalOpen(true)
   }
 
@@ -666,6 +667,14 @@ export default function Home() {
   // Show main app if authenticated
   return (
     <>
+      {/* Persistent Left Sidebar */}
+      <PersistentLeftSidebar
+        connectionRequests={connectionRequests}
+        onProfileClick={() => setIsProfileModalOpen(true)}
+        onSettingsClick={() => setIsSettingsModalOpen(true)}
+        onConnectionsClick={() => setIsConnectionsModalOpen(true)}
+      />
+      
     <AppLayout
       role={role}
       user={user}
@@ -675,9 +684,9 @@ export default function Home() {
       handleDeletePdf={handleDeletePdf}
       onRoleChange={handleRoleChange}
     >
-      <div className="flex items-center justify-center p-8">
-        <div className="max-w-2xl mx-auto w-full">
-          <div className="flex flex-col items-center space-y-8">
+          <div className="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 ml-20">
+      <div className="max-w-4xl mx-auto w-full">
+          <div className="flex flex-col items-center justify-center space-y-12 sm:space-y-16">
             {/* VC Mode Layout - Two Napkins */}
             {role === 'vc' && (
               <>
@@ -718,7 +727,7 @@ export default function Home() {
                 <div className="relative">
                   <SwipeNapkin
                     title="VCs Interested In You"
-                    description="Review VCs who liked your ideas. Like to match, or pass to remove."
+                    description="Review VCs who liked your ideas. Like to match, or ghost to remove."
                     items={vcReviewItems}
                     onLike={handleFounderLikeVC}
                     onPass={handleFounderPassVC}
@@ -750,60 +759,7 @@ export default function Home() {
       </div>
     </AppLayout>
       
-      {/* Dynamic napkin corner positioning */}
-      {role === 'vc' && (
-        <BottomNapkinBar
-          buttons={[
-            // {
-            //   onClick: () => setIsLikesModalOpen(true),
-            //   count: likedIdeas.length,
-            //   label: "Likes"
-            // },
-            // {
-            //   onClick: () => setIsPassedIdeasModalOpen(true),
-            //   count: passedIdeas.length,
-            //   label: "Passed"
-            // },
-            {
-              onClick: () => setIsAccountModalOpen(true),
-              count: 0,
-              label: "Account"
-            },
-            {
-              onClick: () => setIsConnectionsModalOpen(true),
-              count: connectionRequests.length,
-              label: "Connections"
-            }
-          ]}
-            />
-      )}
-      
-      {role === 'founder' && (
-        <BottomNapkinBar
-          buttons={[
-            //{
-            //  onClick: () => setIsSubmittedIdeasModalOpen(true),
-            //  count: creativeIdeas.length,
-            //  label: "Oneliners"
-            //},
-            // {
-            //   onClick: () => setIsVCLikesModalOpen(true),
-            //   count: vcsWithLikedIdeas.length,
-            //   label: "Likes"
-            // },
-            {
-              onClick: () => setIsAccountModalOpen(true),
-              count: 0,
-              label: "Account"
-            },
-            {
-              onClick: () => setIsConnectionsModalOpen(true),
-              count: connectionRequests.length,
-              label: "Connections"
-            }
-          ]}
-            />
-      )}
+
       
       {/* Modals */}
       <LikesModal
@@ -827,16 +783,14 @@ export default function Home() {
         onLikeVC={handleLikeVC}
       />
       
-      <AccountModal
-        isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
-        items={creativeIdeas}
-        onEdit={handleEditPdf}
-        onDelete={handleDeletePdf}
-        role={role}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
         user={user}
-        onRoleChange={handleRoleChange}
+        role={role}
         signOut={signOut}
+        onRoleChange={handleRoleChange}
+        items={creativeIdeas}
         onOnelinersClick={handleOnelinersButtonClick}
       />
 
@@ -856,6 +810,11 @@ export default function Home() {
           setIsConnectionsModalOpen(false);
           setIsPassedIdeasModalOpen(true);
         }}
+      />
+
+      <ModernTabBar
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
       />
 
       <PassedIdeasModal

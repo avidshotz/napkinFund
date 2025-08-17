@@ -71,12 +71,14 @@ export default function LikeHistory({
   if (likeHistory.length === 0) return null
 
   return (
-    <div className="absolute top-2 right-2 text-xs text-gray-600 bg-white bg-opacity-90 rounded p-2 max-w-48 shadow-md z-10">
+    <div className="absolute top-4 right-4 text-xs text-slate-700 dark:text-slate-300 
+                    bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm 
+                    rounded-lg p-3 max-w-52 shadow-lg border border-slate-200/60 dark:border-slate-700/60 z-20">
       {likeHistory.map((entry, index) => (
-        <div key={index} className="mb-1 last:mb-0">
-          <div className="font-medium">{entry.text}</div>
+        <div key={index} className="mb-2 last:mb-0">
+          <div className="font-medium text-slate-900 dark:text-slate-100">{entry.text}</div>
           {entry.timestamp && (
-            <div className="text-gray-500">{entry.timestamp}</div>
+            <div className="text-slate-500 dark:text-slate-400 mt-0.5">{entry.timestamp}</div>
           )}
         </div>
       ))}

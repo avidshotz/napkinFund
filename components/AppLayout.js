@@ -38,7 +38,7 @@ export default function AppLayout({
       </div>
 
       {/* Main Content */}
-      <div className="pt-20">
+      <div className="pt-20 min-h-screen">
         {children}
       </div>
     </div>

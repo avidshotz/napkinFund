@@ -2,10 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global font family - Helvetica Neue */
+* {
+  font-family: 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 /* Ensure proper viewport handling */
 html, body {
   overflow-x: hidden;
   position: relative;
+  background-color: white;
 }
 
 /* Ensure triangles are always visible */
@@ -17,4 +23,131 @@ html, body {
 /* Prevent text selection on triangles */
 .napkin-triangle * {
   user-select: none;
-} 
+}
+
+/* Custom animations for encouraging popups */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Text animations for page load */
+@keyframes textFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes textSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes textGlow {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation classes */
+.animate-text-fade {
+  animation: textFadeIn 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-text-slide {
+  animation: textSlideIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-text-glow {
+  animation: textGlow 0.7s ease-out forwards;
+  opacity: 0;
+}
+
+/* Staggered delays */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+.delay-700 {
+  animation-delay: 0.7s;
+}
+
+/* Scrolling one-liners animation */
+@keyframes scrollUp {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.animate-scroll-up {
+  animation: scrollUp 4s linear infinite;
+}
+
+.scrolling-container {
+  height: 60px;
+  overflow: hidden;
+  position: relative;
+  mask: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+
+ 
