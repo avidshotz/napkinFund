@@ -83,55 +83,69 @@ export default function VCUnreviewedIdeas({
     }
   }, [items.length, currentIndex, onLike, onConnect])
 
-  // Professional item renderer with enhanced typography
+  // Clean and readable item renderer
   const renderItem = useCallback((item, userRole) => {
     if (!item) return null
-
-    const gradientText = "bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 bg-clip-text text-transparent dark:from-gray-100 dark:via-white dark:to-gray-100"
     
     return (
       <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
-        <div className="space-y-6 max-w-2xl mx-auto">
-          <div className="text-center space-y-4">
-            <h3 className={`text-2xl font-bold leading-tight ${gradientText} animate-text-fade`}>
+        <div className="text-center space-y-6">
+          {/* Idea Title */}
+          <div>
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
               {item.idea_name?.toLowerCase() || 'untitled idea'}
             </h3>
-            
-            {item.idea_description && (
-              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium animate-text-slide delay-100">
+          </div>
+          
+          {/* Idea Description */}
+          {item.idea_description && (
+            <div>
+              <p className="text-xl text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
                 {item.idea_description.toLowerCase()}
               </p>
-            )}
-            
-            {item.founder_name && (
-              <div className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-full">
-                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  by {item.founder_name.toLowerCase()}
-                </span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+          
+                     {/* Founder Info */}
+           {item.founder_name && (
+             <div className="inline-flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 px-6 py-3 rounded-full border border-blue-200 dark:border-blue-700">
+               {/* Profile Picture */}
+               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+                 {item.founder_profile_picture ? (
+                   <img 
+                     src={item.founder_profile_picture} 
+                     alt={`${item.founder_name}'s profile`}
+                     className="w-full h-full object-cover"
+                   />
+                 ) : (
+                   item.founder_name.charAt(0).toUpperCase()
+                 )}
+               </div>
+               <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                 by {item.founder_name.toLowerCase()}
+               </span>
+             </div>
+           )}
         </div>
       </div>
     )
   }, [isTransitioning])
 
-  // Enhanced empty state with professional styling
+  // Clean and informative empty state
   const renderEmptyState = useCallback(() => {
     return (
-      <div className="flex flex-col items-center justify-center py-16 space-y-6">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex flex-col items-center justify-center py-12 space-y-6">
+        <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
         </div>
-        <div className="text-center space-y-2">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="text-center space-y-3">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
             {emptyMessage}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 max-w-md">
-            check back later for new opportunities or refresh to see if any new ideas have been submitted.
+          <p className="text-gray-600 dark:text-gray-400 max-w-md text-lg">
+            all caught up! new ideas will appear here as founders submit them.
           </p>
         </div>
       </div>
@@ -152,59 +166,71 @@ export default function VCUnreviewedIdeas({
 
   return (
     <div className={`relative ${className}`}>
-      <div className="flex flex-col items-center justify-center space-y-6 w-full">
-        <div className="text-center space-y-3">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 
-                         bg-clip-text text-transparent animate-text-glow">{title}</h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 font-medium animate-text-fade delay-200">{description}</p>
+      <div className="p-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
+          <p className="text-gray-600 dark:text-gray-400">{description}</p>
         </div>
         
-        <div className="relative min-h-[200px] flex flex-col w-full max-w-2xl mx-auto py-8">
+        {/* Content Area */}
+        <div className="relative min-h-[300px]">
           {items.length > 0 ? (
-            <div className="flex flex-col items-center justify-center space-y-6 w-full">
-              <div className="text-center w-full">
+            <div className="space-y-6">
+              {/* Idea Display */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 border border-gray-200/60 dark:border-gray-700/60">
                 {renderItem(currentItem, 'vc')}
               </div>
               
-              <div className="flex items-center justify-center space-x-3">
-                <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+              {/* Progress Indicator */}
+              <div className="flex items-center justify-center">
+                <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 w-48">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentIndex + 1) / items.length) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="ml-4 text-sm text-gray-600 dark:text-gray-400 font-medium">
                   {currentIndex + 1} of {items.length}
                 </span>
               </div>
               
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="flex items-center justify-center space-x-4">
-                  <button 
-                    onClick={() => handleAction('like')}
-                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 
-                               hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white 
-                               rounded-xl font-bold text-lg transition-all duration-300 hover:scale-105 active:scale-95
-                               focus:ring-4 focus:ring-amber-500/50 focus:ring-offset-2
-                               shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5
-                               border-2 border-amber-400"
-                    title="Like this idea"
-                  >
-                    <span className="w-2 h-2 bg-white rounded-full"></span>
-                    like
-                  </button>
-                  <button 
-                    onClick={() => handlePass(currentIndex)}
-                    className="px-8 py-4 bg-gradient-to-r from-slate-600 to-slate-700 
-                               hover:from-slate-700 hover:to-slate-800 text-white rounded-xl font-bold text-lg
-                               transition-all duration-300 hover:scale-105 active:scale-95
-                               shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
-                               disabled:opacity-50 disabled:cursor-not-allowed
-                               border-2 border-slate-500"
-                    disabled={items.length === 0}
-                  >
-                    ghost
-                  </button>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center space-x-6">
+                                 <button 
+                   onClick={() => handleAction('like')}
+                   className="flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-amber-500 to-yellow-600 
+                              hover:from-amber-600 hover:to-yellow-700 text-white 
+                              rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 active:scale-95
+                              shadow-lg hover:shadow-xl transform hover:-translate-y-1
+                              border-2 border-amber-400"
+                   title="Like this idea"
+                 >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  like idea
+                </button>
+                
+                <button 
+                  onClick={() => handlePass(currentIndex)}
+                  className="px-10 py-4 bg-gradient-to-r from-gray-500 to-gray-600 
+                             hover:from-gray-600 hover:to-gray-700 text-white rounded-2xl font-bold text-lg
+                             transition-all duration-300 hover:scale-105 active:scale-95
+                             shadow-lg hover:shadow-xl transform hover:-translate-y-1
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             border-2 border-gray-400"
+                  disabled={items.length === 0}
+                >
+                  pass
+                </button>
               </div>
             </div>
           ) : (
             renderEmptyState()
           )}
+          
+          {/* Like History */}
           {currentItem && renderLikeHistory(currentItem, 'vc')}
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-export default function SubmitNapkin({ onSubmit, oneLiner, setOneLiner }) {
+export default function SubmitNapkin({ onSubmit, oneLiner, setOneLiner, onLaunchSuccess, isAnimating = false, isRestoring = false }) {
   const [isLaunching, setIsLaunching] = useState(false)
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
   
@@ -38,33 +38,42 @@ export default function SubmitNapkin({ onSubmit, oneLiner, setOneLiner }) {
       // Launch animation delay
       setTimeout(() => {
         setIsLaunching(false)
-      onSubmit()
+        onSubmit()
+        // Trigger confetti and success callback
+        if (onLaunchSuccess) {
+          onLaunchSuccess()
+        }
       }, 800)
     }
   }
 
   return (
-    <div className="w-full">
-      {/* Main Card Container - Full Width Background */}
-      <div className="w-full relative z-10">
-        {/* Card with Playful Napkin Aesthetic - Wider Style */}
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-8 md:p-10
-                      transform rotate-1 hover:rotate-0 transition-transform duration-300">
+    <div className="w-full flex justify-center">
+      {/* Main Card Container - Centered */}
+      <div className="w-full max-w-4xl relative z-10">
+        {/* Card with Playful Napkin Aesthetic - Centered */}
+        <div className={`bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border-2 border-gray-200 dark:border-gray-600 p-8 md:p-10
+                       transform rotate-1 hover:rotate-0 transition-all duration-500 ease-out
+                       ${isAnimating ? 'animate-crumple' : ''} ${isRestoring ? 'animate-restore' : ''}`}
+                       style={isAnimating ? {
+                         transform: 'scale(0.8) rotate(15deg) translateX(-100px)',
+                         opacity: 0.6
+                       } : {}}>
           
 
 
-          {/* Header with Playful Typography - Wider Layout */}
+          {/* Header with Playful Typography - Centered Layout */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-6 mb-4">
-                            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-3xl flex items-center justify-center shadow-xl
-                            transform -rotate-6 hover:rotate-0 transition-transform duration-300">
+            <div className="flex flex-col items-center gap-4 mb-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-3xl flex items-center justify-center shadow-xl
+                             transform -rotate-6 hover:rotate-0 transition-transform duration-300">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
-              </div>
+            </div>
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white
-                            bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent
-                            transform -rotate-1 hover:rotate-0 transition-transform duration-300">
+                             bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent
+                             transform -rotate-1 hover:rotate-0 transition-transform duration-300">
                 napkin pitch
               </h1>
         </div>
@@ -121,12 +130,12 @@ export default function SubmitNapkin({ onSubmit, oneLiner, setOneLiner }) {
               </p>
             )}
             {oneLiner.length >= 60 && oneLiner.length < 90 && (
-              <p className="text-green-600 dark:text-green-400 text-lg font-medium">
+              <p className="text-amber-600 dark:text-amber-400 text-lg font-medium">
                 🎯 almost there! add a unique angle or competitive advantage
               </p>
             )}
             {oneLiner.length >= 90 && (
-              <p className="text-green-600 dark:text-green-400 text-lg font-medium">
+              <p className="text-amber-600 dark:text-amber-400 text-lg font-medium">
                 🎉 perfect! investors will love this level of detail
               </p>
             )}
@@ -154,16 +163,16 @@ export default function SubmitNapkin({ onSubmit, oneLiner, setOneLiner }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </>
-                              ) : (
-                  <>
-                    <span className="text-xl">launch & match</span>
-                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </>
-                )}
+              ) : (
+                <>
+                  <span className="text-xl">launch & match</span>
+                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+            </div>
+                </>
+              )}
             </button>
         </div>
 

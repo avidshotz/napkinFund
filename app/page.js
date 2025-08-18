@@ -25,6 +25,9 @@ import ModernTabBar from '../components/ModernTabBar'
 import Onboarding from '../components/Onboarding';
 import PassedIdeasModal from '../components/PassedIdeasModal';
 import OnelinersModal from '../components/OnelinersModal';
+import AllUsersModal from '../components/AllUsersModal';
+import ConfettiBlip from '../components/ConfettiBlip';
+import ScrollingIdeasWheel from '../components/ScrollingIdeasWheel';
 
 export const onboardingQuestions = [
   { key: 'name', label: 'what is your name?', type: 'text' },
@@ -44,6 +47,7 @@ export default function Home() {
   const [vcUnreviewedIdeas, setVcUnreviewedIdeas] = useState([])
   const [vcMatchedIdeas, setVcMatchedIdeas] = useState([])
   const [vcLikedIdeas, setVcLikedIdeas] = useState([])
+  const [allUsers, setAllUsers] = useState([])
   const [vcsWithLikedIdeas, setVcsWithLikedIdeas] = useState([])
   const [connectionRequests, setConnectionRequests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +66,11 @@ export default function Home() {
   const [vcReviewItems, setVcReviewItems] = useState([])
   const [liveCounter, setLiveCounter] = useState(10)
   const [counterStep, setCounterStep] = useState(0)
+  const [showNapkinAnimation, setShowNapkinAnimation] = useState(false)
+  const [showNapkinRestore, setShowNapkinRestore] = useState(false)
+  const [showIdeasPopup, setShowIdeasPopup] = useState(false)
+  const [showConfettiBlip, setShowConfettiBlip] = useState(false)
+  const [showAllUsersModal, setShowAllUsersModal] = useState(false)
   const fetchingRef = useRef(false)
 
   const { user, loading: authLoading, signOut } = useAuth()
@@ -244,16 +253,53 @@ export default function Home() {
           // Clear founder-specific data for VCs
           setCreativeIdeas([]);
 
-          // AccountModal: fetch user profile
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          if (!profileError) setProfile(profileData);
+                      // AccountModal: fetch user profile
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+            if (!profileError) setProfile(profileData);
+
+            // Fetch all users for potential matches
+            const { data: allUsersData, error: allUsersError } = await supabase
+              .from('profiles')
+              .select('id, name, link, vcphotourl, isLooking')
+              .neq('id', user.id) // Exclude current user
+              .eq('isLooking', true); // Only founders (people looking for investment)
+            if (!allUsersError) {
+              setAllUsers(allUsersData || []);
+            }
 
             setMatchedIdeas([]); // VCs don't see matches until founders like them
-            setVcLikedIdeas([]);
+            
+            // Fetch VC's liked ideas
+            const { data: vcLikedIdeasData, error: vcLikedIdeasError } = await supabase
+              .from('connections')
+              .select(`
+                *,
+                idea:idea_id (*),
+                founder:founder_id (
+                  id,
+                  name,
+                  link,
+                  vcphotourl
+                )
+              `)
+              .eq('vc_id', user.id)
+              .eq('status', 'curious');
+            
+            if (!vcLikedIdeasError && vcLikedIdeasData) {
+              const formattedLikedIdeas = vcLikedIdeasData.map(conn => ({
+                ...conn.idea,
+                creatorName: conn.founder?.name,
+                creatorPhoto: conn.founder?.vcphotourl,
+                creatorLinkedin: conn.founder?.link
+              }));
+              setVcLikedIdeas(formattedLikedIdeas);
+            } else {
+              setVcLikedIdeas([]);
+            }
           } else {
             // For founders: fetch their ideas and VCs who liked them
             const [userPdfs, userLikedPdfs, pendingConnections, requestedConnections, connectedConnections, curiousConnections] = await Promise.all([
@@ -266,6 +312,16 @@ export default function Home() {
             ]);
 
             // VCLikesModal: not used for founders
+
+            // Format curious connections (VCs who liked founder's ideas) for display
+            const formattedCuriousConnections = curiousConnections.map(conn => ({
+              ...conn,
+              vcName: conn.vc?.name || `VC ${conn.vc_id?.slice(0, 8)}...`,
+              vcLinkedin: conn.vc?.link,
+              vcPhoto: conn.vc?.vcphotourl,
+              ideaName: conn.idea?.idea_name || conn.idea_id,
+            }));
+            setVcReviewItems(formattedCuriousConnections);
 
             // ConnectionsModal: show 'requested', 'connected'
             const allConnectionRequests = [
@@ -341,29 +397,64 @@ export default function Home() {
     }
   }
 
-  const handleLike = async (id) => {
-    console.log('[handleLike] Called with id:', id, 'role:', role)
+  const handleLaunchSuccess = () => {
+    // Show confetti blip immediately
+    setShowConfettiBlip(true)
+    
+    // Show napkin animation
+    setShowNapkinAnimation(true)
+    
+    // Show ideas popup after napkin animation starts
+    setTimeout(() => {
+      setShowIdeasPopup(true)
+    }, 1200)
+    
+    // Start restore animation after crumple completes (1.5s) + 1 second delay
+    setTimeout(() => {
+      setShowNapkinAnimation(false)
+      setShowNapkinRestore(true)
+    }, 2500)
+    
+    // Hide popup after 3 seconds
+    setTimeout(() => {
+      setShowIdeasPopup(false)
+    }, 4200)
+    
+    // Reset restore state after restore animation completes
+    setTimeout(() => {
+      setShowNapkinRestore(false)
+    }, 3300)
+  }
+
+  const handleLike = async (index) => {
+    console.log('[handleLike] Called with index:', index, 'role:', role)
     try {
       if (role === 'vc') {
-        // VC liking an unreviewed idea
-        const pdf = vcUnreviewedIdeas.find(i => i.id === id)
+        // VC liking an unreviewed idea by index
+        const pdf = vcUnreviewedIdeas[index]
         if (pdf) {
           // Create curious connection for VC liking an idea
-          await connectionsService.createCuriousConnection(user.id, pdf.user_id, id)
+          await connectionsService.createCuriousConnection(user.id, pdf.user_id, pdf.id)
           
           // Remove from unreviewed ideas
-          setVcUnreviewedIdeas(vcUnreviewedIdeas.filter(i => i.id !== id))
+          setVcUnreviewedIdeas(prev => prev.filter((_, i) => i !== index))
           
-          // Add to liked ideas
-          setLikedIdeas([...likedIdeas, pdf])
+          // Add to VC's liked ideas
+          const likedIdea = {
+            ...pdf,
+            creatorName: pdf.creatorName || pdf.creator?.name,
+            creatorPhoto: pdf.creatorPhoto || pdf.creator?.vcphotourl,
+            creatorLinkedin: pdf.creatorLinkedin || pdf.creator?.link
+          }
+          setVcLikedIdeas(prev => [...prev, likedIdea])
         }
       } else {
         // Founder logic (unchanged)
-        const pdf = creativeIdeas.find(i => i.id === id)
+        const pdf = creativeIdeas[index]
         if (pdf) {
-          await pdfsService.likePdf(id, user.id)
-          setCreativeIdeas(creativeIdeas.filter(p => p.id !== id))
-          setLikedIdeas([pdf, ...likedIdeas])
+          await pdfsService.likePdf(pdf.id, user.id)
+          setCreativeIdeas(prev => prev.filter((_, i) => i !== index))
+          setLikedIdeas(prev => [pdf, ...prev])
         }
       }
     } catch (error) {
@@ -696,14 +787,21 @@ export default function Home() {
   // Show main app if authenticated
   return (
     <>
-             {/* Persistent Left Sidebar */}
-       <PersistentLeftSidebar
-         connectionRequests={connectionRequests}
-         onProfileClick={() => setIsProfileModalOpen(true)}
-         onSettingsClick={() => setIsSettingsModalOpen(true)}
-         onConnectionsClick={() => setIsConnectionsModalOpen(true)}
-         onSubmittedIdeasClick={() => setIsSubmittedIdeasModalOpen(true)}
-       />
+      {/* Confetti Blip */}
+      <ConfettiBlip 
+        isActive={showConfettiBlip} 
+        onComplete={() => setShowConfettiBlip(false)} 
+      />
+      
+      {/* Persistent Left Sidebar */}
+                          <PersistentLeftSidebar
+                     connectionRequests={connectionRequests}
+                     onProfileClick={() => setIsProfileModalOpen(true)}
+                     onSettingsClick={() => setIsSettingsModalOpen(true)}
+                     onConnectionsClick={() => setIsConnectionsModalOpen(true)}
+                     onSubmittedIdeasClick={role === 'founder' ? () => setIsSubmittedIdeasModalOpen(true) : () => setIsVCLikesModalOpen(true)}
+                     showIdeasPopup={showIdeasPopup}
+                   />
       
     <AppLayout
       role={role}
@@ -720,44 +818,94 @@ export default function Home() {
              
              <div className="max-w-7xl mx-auto w-full relative z-10">
                <div className="flex flex-col items-center justify-center space-y-8 sm:space-y-12">
-            {/* VC Mode Layout - Two Napkins */}
+            {/* VC Mode Layout - Clean Dashboard */}
             {role === 'vc' && (
               <>
-                {/* VC Mode Header */}
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Enhanced VC Dashboard Header */}
+                <div className="text-center mb-12 w-full">
+                  <div className="flex flex-col items-center gap-4 mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 rounded-3xl flex items-center justify-center shadow-2xl">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h6m-6 4h6m-2 4h2M9 15h2" />
                       </svg>
                     </div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">investor dashboard</h2>
+                    <div className="text-center">
+                      <h2 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
+                        investor dashboard
+                      </h2>
+                      <p className="text-xl text-gray-600 dark:text-gray-400 font-medium">
+                        discover and evaluate next big ideas by thousands of startup founders
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-                    discover and evaluate the next big ideas from innovative founders
-                  </p>
                 </div>
 
-                <VCUnreviewedIdeas
-                  title="ideas to review"
-                  description="new ideas waiting for your review."
-                  items={vcUnreviewedIdeas}
-                  onLike={handleLike}
-                  onPass={handlePassVc}
-                  emptyMessage="no new ideas to review."
-                  width={600}
-                  height={400}
-                />
-                <VCMatchedIdeas
-                  title="matches"
-                  description="ideas where both you and the founder have shown interest."
-                  items={vcMatchedIdeas}
-                  onConnect={handleConnect}
-                  onPass={handlePassMatched}
-                  emptyMessage="no matches yet."
-                  width={600}
-                  height={400}
-                />
+                {/* Dashboard Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-4xl mx-auto">
+                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-white">{vcUnreviewedIdeas.length}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">ideas to review</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 transition-transform duration-200"
+                       onClick={() => setShowAllUsersModal(true)}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{allUsers.length || 0}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">potential matches</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+
+                  
+
+                </div>
+
+                {/* Main Content Area - Side by Side Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+                  {/* Ideas to Review Section */}
+                  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-200/60 dark:border-gray-700/60 shadow-xl">
+                    <VCUnreviewedIdeas
+                      title="ideas to review"
+                      description="new ideas waiting for your review"
+                      items={vcUnreviewedIdeas}
+                      onLike={handleLike}
+                      onPass={handlePassVc}
+                      emptyMessage="no new ideas to review"
+                      width={600}
+                      height={400}
+                    />
+                  </div>
+                  
+                  {/* Matches Section */}
+                  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-200/60 dark:border-gray-700/60 shadow-xl">
+                    <VCMatchedIdeas
+                      title="matches"
+                      description="ideas where both parties showed interest"
+                      items={vcMatchedIdeas}
+                      onConnect={handleConnect}
+                      onPass={handlePassMatched}
+                      emptyMessage="no matches yet"
+                      width={600}
+                      height={400}
+                    />
+                  </div>
+                </div>
               </>
             )}
 
@@ -765,9 +913,9 @@ export default function Home() {
              {role === 'founder' && (
                <>
                  {/* Side by Side Layout */}
-                 <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 w-full">
+                 <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 w-full">
                    {/* Left Side - Hero Section */}
-                   <div className="flex-1 text-left max-w-4xl lg:ml-0 xl:ml-8">
+                   <div className="flex-1 text-center lg:text-left max-w-4xl">
                      <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight 
                                     animate-text-fade delay-200">
                        your idea, one sentence. their investment, one swipe.
@@ -778,30 +926,97 @@ export default function Home() {
                      </p>
                      
                      {/* Live Counter */}
-                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 
-                                    border border-green-200 dark:border-green-800 rounded-full
+                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 
+                                    border border-amber-200 dark:border-amber-800 rounded-full
                                     animate-text-fade delay-400 hover:scale-105 transition-transform duration-200">
-                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                       <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                       <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                       <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
                          {liveCounter.toLocaleString()} ideas launched today
                        </span>
                      </div>
                    </div>
 
                    {/* Right Side - Napkin Pitch Card */}
-                   <div className="flex-1 flex justify-center lg:justify-end">
-                     <SubmitNapkin 
-                       onSubmit={handleSubmit}
-                       oneLiner={oneLiner}
-                       setOneLiner={setOneLiner}
-                       width={600}
-                       height={400}
-                     />
+                   <div className="flex-1 flex justify-center">
+                         <SubmitNapkin 
+                            onSubmit={handleSubmit}
+                            oneLiner={oneLiner}
+                            setOneLiner={setOneLiner}
+                            onLaunchSuccess={handleLaunchSuccess}
+                            isAnimating={showNapkinAnimation}
+                            isRestoring={showNapkinRestore}
+                            width={600}
+                            height={400}
+                          />
                    </div>
                  </div>
 
-
-
+                 {/* VCs Who Liked Your Ideas Section */}
+                 {vcsWithLikedIdeas.length > 0 && (
+                   <div className="w-full max-w-4xl mx-auto">
+                     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/60 dark:border-gray-700/60 shadow-xl">
+                       <div className="text-center mb-8">
+                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                           vcs interested in your ideas
+                         </h3>
+                         <p className="text-gray-600 dark:text-gray-400">
+                           {vcsWithLikedIdeas.length} vc{vcsWithLikedIdeas.length !== 1 ? 's' : ''} have shown interest in your ideas
+                         </p>
+                       </div>
+                       
+                       <div className="grid gap-4">
+                         {vcsWithLikedIdeas.map((vc) => (
+                           <div key={vc.vcId} className="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow duration-200">
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-4">
+                                 {/* VC Profile Picture */}
+                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-lg overflow-hidden">
+                                   {vc.vcPhoto ? (
+                                     <img 
+                                       src={vc.vcPhoto} 
+                                       alt={`${vc.vcName}'s profile`}
+                                       className="w-full h-full object-cover rounded-full"
+                                     />
+                                   ) : (
+                                     vc.vcName?.charAt(0).toUpperCase() || '?'
+                                   )}
+                                 </div>
+                                 
+                                 {/* VC Info */}
+                                 <div>
+                                   <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
+                                     {vc.vcName}
+                                   </h4>
+                                   <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                     interested in your idea
+                                   </p>
+                                 </div>
+                               </div>
+                               
+                               {/* LinkedIn Link */}
+                               {vc.vcLinkedin && (
+                                 <a
+                                   href={vc.vcLinkedin}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="p-2 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-full transition-colors duration-200"
+                                   title="View LinkedIn Profile"
+                                 >
+                                   <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                   </svg>
+                                 </a>
+                               )}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 )}
+                 
+                 {/* Scrolling Ideas Wheel */}
+                 <ScrollingIdeasWheel />
                  
                </>
              )}
@@ -832,6 +1047,7 @@ export default function Home() {
         isOpen={isVCLikesModalOpen}
         onClose={() => setIsVCLikesModalOpen(false)}
         vcsWithLikedIdeas={vcsWithLikedIdeas}
+        vcLikedIdeas={vcLikedIdeas}
         onLikeVC={handleLikeVC}
       />
       
@@ -883,6 +1099,12 @@ export default function Home() {
         oneliners={creativeIdeas}
         onEdit={handleEditPdf}
         onDelete={handleDeletePdf}
+      />
+
+      <AllUsersModal
+        isOpen={showAllUsersModal}
+        onClose={() => setShowAllUsersModal(false)}
+        users={allUsers}
       />
     </>
   )
