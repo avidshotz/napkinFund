@@ -99,13 +99,13 @@ export default function Onboarding({ user, profile, onComplete }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 w-full max-w-sm space-y-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-center flex-1">Welcome! Let&apos;s set up your profile</h2>
+          <h2 className="text-2xl font-bold text-center flex-1">welcome! let&apos;s set up your profile</h2>
           <button
             type="button"
             onClick={handleSignOut}
             className="text-gray-500 hover:text-gray-700 text-sm underline"
           >
-            Sign Out
+            sign out
           </button>
         </div>
         {onboardingQuestions.map(q => (

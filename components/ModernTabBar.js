@@ -20,7 +20,7 @@ export default function ModernTabBar({
           <div className="flex items-center justify-between p-6">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 
                            bg-clip-text text-transparent">
-              Settings
+              settings
             </h1>
             
             <button
@@ -48,39 +48,39 @@ export default function ModernTabBar({
             </div>
             
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              General Settings
+              general settings
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              App settings and preferences
+              app settings and preferences
             </p>
 
             {/* Settings options can be added here in the future */}
             <div className="space-y-4">
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Theme</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">theme</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Theme switching will be available soon
+                  theme switching will be available soon
                 </p>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Notifications</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">notifications</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Notification preferences coming soon
+                  notification preferences coming soon
                 </p>
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Privacy</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">privacy</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Privacy settings will be available soon
+                  privacy settings will be available soon
                 </p>
               </div>
             </div>
 
             <div className="pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                For account and connection management, use the Profile button in the bottom bar
+                for account and connection management, use the profile button in the bottom bar
               </p>
             </div>
           </div>

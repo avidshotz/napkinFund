@@ -31,7 +31,7 @@ export default function AppLayout({
                 ? 'bg-blue-500 text-white' 
                 : 'bg-green-500 text-white'
             }`}>
-              {role === 'vc' ? 'VC Mode' : 'Founder Mode'}
+              {role === 'vc' ? 'VC Mode' : 'founder mode'}
             </span>
           </div>
         </div>

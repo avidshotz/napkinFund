@@ -101,7 +101,7 @@ export default function ProfileModal({
           <div className="flex items-center justify-between p-6">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 
                            bg-clip-text text-transparent">
-              Profile Management
+              profile management
             </h1>
             
             <button
@@ -124,33 +124,21 @@ export default function ProfileModal({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Profile Information
+                  profile information
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Manage your personal details and preferences
+                  manage your personal details and preferences
                 </p>
               </div>
               
-              {role === 'founder' && (
-                <button
-                  onClick={onOnelinersClick}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 
-                             hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white 
-                             rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Ideas ({items?.length || 0})
-                </button>
-              )}
+
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Name
+                    name
                   </label>
                   <input
                     type="text"
@@ -160,13 +148,13 @@ export default function ProfileModal({
                                bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                                focus:ring-2 focus:ring-amber-500 focus:border-transparent
                                transition-all duration-200"
-                    placeholder="Enter your name"
+                    placeholder="enter your name"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    LinkedIn Profile
+                    linkedin profile
                   </label>
                   <input
                     type="url"
@@ -184,7 +172,7 @@ export default function ProfileModal({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    What I'm Looking For
+                    what i'm looking for
                   </label>
                   <textarea
                     value={profileForm.lookingFor}
@@ -193,7 +181,7 @@ export default function ProfileModal({
                                bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                                focus:ring-2 focus:ring-amber-500 focus:border-transparent
                                transition-all duration-200 resize-none"
-                    placeholder={role === 'vc' ? "e.g., Early-stage SaaS, FinTech, AI/ML" : "e.g., Seed funding, Series A, Strategic partnerships"}
+                    placeholder={role === 'vc' ? "e.g., early-stage saas, fintech, ai/ml" : "e.g., seed funding, series a, strategic partnerships"}
                     rows={4}
                   />
                 </div>
@@ -208,7 +196,7 @@ export default function ProfileModal({
                          text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
                          focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
             >
-              {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
+              {isUpdatingProfile ? 'updating...' : 'update profile'}
             </button>
 
             {profileUpdateMessage && (
@@ -297,7 +285,7 @@ export default function ProfileModal({
           <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-700">
             <div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Account Information
+                account information
               </h3>
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 space-y-3">
                 <div className="flex justify-between items-center">
@@ -317,7 +305,7 @@ export default function ProfileModal({
                 className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl 
                            transition-colors duration-200 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               >
-                Sign Out
+                sign out
               </button>
             </div>
           </div>

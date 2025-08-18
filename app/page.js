@@ -27,11 +27,11 @@ import PassedIdeasModal from '../components/PassedIdeasModal';
 import OnelinersModal from '../components/OnelinersModal';
 
 export const onboardingQuestions = [
-  { key: 'name', label: 'What is your name?', type: 'text' },
-  { key: 'isLooking', label: 'Are you a founder or VC?' },
-  { key: 'history', label: 'What is the name of your company?', type: 'text' },
-  { key: 'lookingfor', label: 'What are you looking for (max 69 chars)?', type: 'text' },
-  { key: 'link', label: 'Please link your LinkedIn profile', type: 'text' }
+  { key: 'name', label: 'what is your name?', type: 'text' },
+  { key: 'isLooking', label: 'are you a founder or vc?', type: 'text' },
+  { key: 'history', label: 'what is the name of your company?', type: 'text' },
+  { key: 'lookingfor', label: 'what are you looking for (max 69 chars)?', type: 'text' },
+  { key: 'link', label: 'please link your linkedin profile', type: 'text' }
 ];
 
 export default function Home() {
@@ -60,9 +60,38 @@ export default function Home() {
   const [passedIdeas, setPassedIdeas] = useState([])
   const [isPendingConnectionsModalOpen, setIsPendingConnectionsModalOpen] = useState(false);
   const [vcReviewItems, setVcReviewItems] = useState([])
+  const [liveCounter, setLiveCounter] = useState(10)
+  const [counterStep, setCounterStep] = useState(0)
   const fetchingRef = useRef(false)
 
   const { user, loading: authLoading, signOut } = useAuth()
+
+  // Live counter that increases by different amounts every 30 seconds and resets daily
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveCounter(prev => {
+        // Reset to 10 at the start of each day
+        const now = new Date()
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const timeSinceStartOfDay = now.getTime() - startOfDay.getTime()
+        
+        // If it's a new day, reset to 10
+        if (timeSinceStartOfDay < 30000) { // First 30 seconds of the day
+          setCounterStep(0)
+          return 10
+        }
+        
+        // Increase by different amounts every 30 seconds
+        const step = Math.floor(timeSinceStartOfDay / 30000) % 3
+        setCounterStep(step)
+        
+        const increments = [23, 34, 37]
+        return prev + increments[step]
+      })
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Fetch user profile and determine role
   useEffect(() => {
@@ -667,13 +696,14 @@ export default function Home() {
   // Show main app if authenticated
   return (
     <>
-      {/* Persistent Left Sidebar */}
-      <PersistentLeftSidebar
-        connectionRequests={connectionRequests}
-        onProfileClick={() => setIsProfileModalOpen(true)}
-        onSettingsClick={() => setIsSettingsModalOpen(true)}
-        onConnectionsClick={() => setIsConnectionsModalOpen(true)}
-      />
+             {/* Persistent Left Sidebar */}
+       <PersistentLeftSidebar
+         connectionRequests={connectionRequests}
+         onProfileClick={() => setIsProfileModalOpen(true)}
+         onSettingsClick={() => setIsSettingsModalOpen(true)}
+         onConnectionsClick={() => setIsConnectionsModalOpen(true)}
+         onSubmittedIdeasClick={() => setIsSubmittedIdeasModalOpen(true)}
+       />
       
     <AppLayout
       role={role}
@@ -684,80 +714,101 @@ export default function Home() {
       handleDeletePdf={handleDeletePdf}
       onRoleChange={handleRoleChange}
     >
-          <div className="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 ml-20">
-      <div className="max-w-4xl mx-auto w-full">
-          <div className="flex flex-col items-center justify-center space-y-12 sm:space-y-16">
+                     <div className="flex items-center justify-center min-h-screen p-2 sm:p-4 lg:p-6 ml-20">
+             {/* Subtle Napkin Paper Texture Background */}
+             <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.02)_1px,transparent_0)] bg-[length:20px_20px] opacity-60"></div>
+             
+             <div className="max-w-7xl mx-auto w-full relative z-10">
+               <div className="flex flex-col items-center justify-center space-y-8 sm:space-y-12">
             {/* VC Mode Layout - Two Napkins */}
             {role === 'vc' && (
               <>
+                {/* VC Mode Header */}
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h6m-6 4h6m-2 4h2M9 15h2" />
+                      </svg>
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">investor dashboard</h2>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+                    discover and evaluate the next big ideas from innovative founders
+                  </p>
+                </div>
+
                 <VCUnreviewedIdeas
-                  title="Ideas to Review"
-                  description="New ideas waiting for your review."
+                  title="ideas to review"
+                  description="new ideas waiting for your review."
                   items={vcUnreviewedIdeas}
                   onLike={handleLike}
                   onPass={handlePassVc}
-                  emptyMessage="No new ideas to review."
+                  emptyMessage="no new ideas to review."
                   width={600}
                   height={400}
                 />
                 <VCMatchedIdeas
-                  title="Matches"
-                  description="Ideas where both you and the founder have shown interest."
+                  title="matches"
+                  description="ideas where both you and the founder have shown interest."
                   items={vcMatchedIdeas}
                   onConnect={handleConnect}
                   onPass={handlePassMatched}
-                  emptyMessage="No matches yet."
+                  emptyMessage="no matches yet."
                   width={600}
                   height={400}
                 />
               </>
             )}
 
-            {/* Founder Mode Layout */}
-            {role === 'founder' && (
-              <>
-                <SubmitNapkin 
-                  onSubmit={handleSubmit}
-                  oneLiner={oneLiner}
-                  setOneLiner={setOneLiner}
-                  width={600}
-                  height={400}
-                />
-                {/* VC Review Napkin for founders */}
-                <div className="relative">
-                  <SwipeNapkin
-                    title="VCs Interested In You"
-                    description="Review VCs who liked your ideas. Like to match, or ghost to remove."
-                    items={vcReviewItems}
-                    onLike={handleFounderLikeVC}
-                    onPass={handleFounderPassVC}
-                    emptyMessage="No VCs have liked your ideas yet."
-                    width={600}
-                    height={400}
-                    renderItem={item => (
-                      <div className="flex flex-col items-center">
-                        <div className="font-semibold text-lg mb-1">{item.vc?.name || 'VC'}</div>
-                        {item.vc?.link && (
-                          <a href={item.vc.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm mb-1">LinkedIn</a>
-                        )}
-                        <div className="text-gray-700 text-sm">Idea: <span className="font-medium">{item.idea?.idea_name || ''}</span></div>
-                      </div>
-                    )}
-                  />
-                  <button
-                    onClick={refreshData}
-                    className="absolute top-4 right-4 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
-                    title="Refresh to see new VCs who liked your ideas"
-                  >
-                    Refresh
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </AppLayout>
+                         {/* Founder Mode Layout */}
+             {role === 'founder' && (
+               <>
+                 {/* Side by Side Layout */}
+                 <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 w-full">
+                   {/* Left Side - Hero Section */}
+                   <div className="flex-1 text-left max-w-4xl lg:ml-0 xl:ml-8">
+                     <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight 
+                                    animate-text-fade delay-200">
+                       your idea, one sentence. their investment, one swipe.
+                     </h1>
+                     <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 
+                                   animate-text-fade delay-300">
+                       join thousands of founders pitching napkin ideas to top investors in seconds.
+                     </p>
+                     
+                     {/* Live Counter */}
+                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 
+                                    border border-green-200 dark:border-green-800 rounded-full
+                                    animate-text-fade delay-400 hover:scale-105 transition-transform duration-200">
+                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                       <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                         {liveCounter.toLocaleString()} ideas launched today
+                       </span>
+                     </div>
+                   </div>
+
+                   {/* Right Side - Napkin Pitch Card */}
+                   <div className="flex-1 flex justify-center lg:justify-end">
+                     <SubmitNapkin 
+                       onSubmit={handleSubmit}
+                       oneLiner={oneLiner}
+                       setOneLiner={setOneLiner}
+                       width={600}
+                       height={400}
+                     />
+                   </div>
+                 </div>
+
+
+
+                 
+               </>
+             )}
+           </div>
+         </div>
+       </div>
+     </AppLayout>
       
 
       
@@ -769,12 +820,13 @@ export default function Home() {
         onUnlike={handleUnlike}
       />
       
-      <SubmittedIdeasModal
-        isOpen={isSubmittedIdeasModalOpen}
-        onClose={() => setIsSubmittedIdeasModalOpen(false)}
-        items={creativeIdeas}
-        onUnlike={handleUnlike}
-      />
+             <SubmittedIdeasModal
+         isOpen={isSubmittedIdeasModalOpen}
+         onClose={() => setIsSubmittedIdeasModalOpen(false)}
+         ideas={creativeIdeas}
+         onEdit={handleEditPdf}
+         onDelete={handleDeletePdf}
+       />
       
       <VCLikesModal
         isOpen={isVCLikesModalOpen}
